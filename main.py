@@ -447,7 +447,7 @@ def combine_results(l1: Optional[dict], l2: dict) -> dict:
         if l2_prediction == "phishing" and l1_prediction == "phishing":
             verdict = "phishing"
             confidence = "very_high"
-            reason = f"Both layers agree — L1={l1_score:.3f}, L2={l2_score:.3f}"
+            reason = f"Both layers agree : L1={l1_score:.3f}, L2={l2_score:.3f}"
 
         elif l2_prediction == "phishing" and l1_prediction == "legitimate":
             verdict = "phishing"

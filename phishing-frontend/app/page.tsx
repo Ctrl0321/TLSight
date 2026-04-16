@@ -6,7 +6,6 @@ import * as Toast from "@radix-ui/react-toast"
 import * as Label from "@radix-ui/react-label"
 import { ShieldCheckIcon, ShieldAlertIcon, ZapIcon, AlertTriangleIcon, LayersIcon, GlobeIcon } from "lucide-react"
 
-// ── New API response type ─────────────────────────────
 type Layer = {
   ran: boolean
   score: number | null
@@ -45,7 +44,6 @@ const itemVariants = {
   },
 }
 
-// ── Verdict config ────────────────────────────────────
 const verdictConfig = {
   phishing: {
     label: "⚠️ Phishing Detected",
@@ -177,7 +175,7 @@ export default function HomePage() {
                 </h1>
               </div>
               <p className="text-sm text-slate-400">
-                Two-layer AI phishing detection — TLS analysis + HTML content scanning
+                Two-layer AI phishing detection  TLS analysis + HTML content scanning
               </p>
             </motion.div>
 
@@ -277,7 +275,7 @@ export default function HomePage() {
                         <div className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
                           <AlertTriangleIcon className="h-4 w-4 text-amber-400 shrink-0" />
                           <p className="text-sm text-amber-300">
-                            This site uses HTTP — your connection is not encrypted
+                            This site uses HTTP , your connection is not encrypted
                           </p>
                         </div>
                       )}
@@ -296,7 +294,7 @@ export default function HomePage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-semibold text-slate-300">
-                                Layer 1 — TLS / URL Features
+                                Layer 1 : TLS / URL Features
                               </p>
                               <p className="text-xs text-slate-500 mt-0.5">
                                 {result.scheme === "https" ? `Threshold: ${result.layer1.threshold}` : "Skipped — HTTP site (no TLS)"}
@@ -335,7 +333,7 @@ export default function HomePage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-semibold text-slate-300">
-                                Layer 2 — HTML + URL Heuristics
+                                Layer 2 : HTML + URL Heuristics
                               </p>
                               <p className="text-xs text-slate-500 mt-0.5">
                                 Threshold: {result.layer2.threshold}
