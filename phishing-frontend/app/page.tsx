@@ -11,9 +11,7 @@ import {
   CheckCircle2Icon, ClockIcon, ChevronDownIcon, ChevronUpIcon,
 } from "lucide-react"
 
-// ─────────────────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────────────────
+
 type Layer = {
   ran: boolean
   skipped?: boolean
@@ -43,14 +41,9 @@ type BulkMeta = { type: "meta"; total: number }
 type BulkDone = { type: "done"; total: number }
 type StreamLine = PredictionResponse | BulkMeta | BulkDone
 
-// ─────────────────────────────────────────────────────────
-// CONFIG
-// ─────────────────────────────────────────────────────────
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-// ─────────────────────────────────────────────────────────
-// MOTION VARIANTS
-// ─────────────────────────────────────────────────────────
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
@@ -60,9 +53,7 @@ const itemVariants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } },
 }
 
-// ─────────────────────────────────────────────────────────
-// VERDICT CONFIG
-// ─────────────────────────────────────────────────────────
+
 const verdictConfig = {
   phishing: {
     label: "Phishing Detected",
@@ -129,9 +120,6 @@ const confidenceLabel: Record<string, string> = {
   none: "None",
 }
 
-// ─────────────────────────────────────────────────────────
-// SMALL COMPONENTS
-// ─────────────────────────────────────────────────────────
 
 function ScoreBar({ score, verdict, delay = 0 }: {
   score: number; verdict: string; delay?: number
@@ -309,9 +297,6 @@ function ResultCard({ result, compact = false }: {
   )
 }
 
-// ─────────────────────────────────────────────────────────
-// SINGLE URL PANEL
-// ─────────────────────────────────────────────────────────
 
 function SinglePanel() {
   const [url, setUrl]       = React.useState("")
@@ -433,10 +418,6 @@ function SinglePanel() {
     </div>
   )
 }
-
-// ─────────────────────────────────────────────────────────
-// BULK URL PANEL  (textarea)
-// ─────────────────────────────────────────────────────────
 
 function BulkPanel() {
   const [text, setText]     = React.useState("")
@@ -577,11 +558,6 @@ function BulkPanel() {
     </div>
   )
 }
-
-// ─────────────────────────────────────────────────────────
-// CSV PANEL  — streaming NDJSON
-// ─────────────────────────────────────────────────────────
-
 function CSVPanel() {
   const [file, setFile]     = React.useState<File | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -782,9 +758,6 @@ function CSVPanel() {
   )
 }
 
-// ─────────────────────────────────────────────────────────
-// ROOT PAGE
-// ─────────────────────────────────────────────────────────
 
 export default function HomePage() {
   return (

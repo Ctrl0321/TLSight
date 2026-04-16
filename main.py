@@ -40,9 +40,7 @@ MAX_TEXT_LEN    = 5000
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────────────────
-# LOAD ALL MODELS AT STARTUP
-# ─────────────────────────────────────────────────────────
+
 logger.info("Loading Layer 1 artifacts...")
 l1_model     = tf.keras.models.load_model(LAYER1_MODEL_PATH, compile=False)
 l1_scaler    = pickle.load(open(LAYER1_SCALER_PATH,   "rb"))
@@ -70,9 +68,7 @@ logger.info(
 
 capturer = TLSTrafficCapture()
 
-# ─────────────────────────────────────────────────────────
-# FASTAPI APP
-# ─────────────────────────────────────────────────────────
+
 app = FastAPI(title="Two-Layer Phishing Detection API")
 
 app.add_middleware(
@@ -83,18 +79,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─────────────────────────────────────────────────────────
-# PYDANTIC MODELS
-# ─────────────────────────────────────────────────────────
+
 class URLInput(BaseModel):
     url: str
 
 class BulkURLInput(BaseModel):
     urls: List[str]
 
-# ─────────────────────────────────────────────────────────
-# URL RESOLUTION HELPERS
-# ─────────────────────────────────────────────────────────
 
 VALID_SCHEMES = {"http", "https"}
 
@@ -103,27 +94,6 @@ _SCHEME_RE = re.compile(r"^([a-zA-Z][a-zA-Z0-9+\-.]*):\/\/", re.IGNORECASE)
 
 
 def parse_raw_url(raw: str) -> tuple[str, str]:
-    """
-    Accepts any raw string the user typed.
-
-    Returns (resolved_url, effective_scheme) where resolved_url has a
-    valid http/https scheme and effective_scheme is 'https' or 'http'.
-
-    Raises ValueError with a human-readable message for invalid inputs.
-
-    Rules
-    ─────
-    1. Strip whitespace.
-    2. Empty string → ValueError.
-    3. If a scheme-like prefix is present (letters + "://"):
-         • If it's http or https → keep as-is.
-         • Otherwise             → raise "Invalid URL scheme".
-    4. No scheme present:
-         • Try https://  first  (HEAD request, 6 s timeout).
-         • If that reaches the server → return https://...
-         • Otherwise try http://      → return http://...
-         • If both fail              → raise "URL unreachable".
-    """
     raw = raw.strip()
     if not raw:
         raise ValueError("URL cannot be empty.")
@@ -188,9 +158,7 @@ def normalize_url_for_model(url: str) -> str:
 def safe_div(a: float, b: float) -> float:
     return float(a) / float(b) if b > 0 else 0.0
 
-# ─────────────────────────────────────────────────────────
-# LAYER 2 HELPERS — MUST MATCH TRAINING
-# ─────────────────────────────────────────────────────────
+
 
 def encode_url_chars(url: str) -> np.ndarray:
     if not isinstance(url, str):
@@ -313,9 +281,7 @@ def extract_dom_features(raw_html: str, page_url: str) -> np.ndarray:
         safe_div(suspicious_forms, total_forms),
     ], dtype=np.float32)
 
-# ─────────────────────────────────────────────────────────
-# REQUEST / FETCH
-# ─────────────────────────────────────────────────────────
+
 
 def fetch_html(url: str):
     headers = {
@@ -336,9 +302,7 @@ def fetch_html(url: str):
         raise ValueError(f"Unsupported content type: {content_type}")
     return resp.text, str(resp.url), content_type
 
-# ─────────────────────────────────────────────────────────
-# LAYER 2 PREDICTION
-# ─────────────────────────────────────────────────────────
+
 
 def run_layer2(url: str) -> dict:
     try:
@@ -379,9 +343,7 @@ def run_layer2(url: str) -> dict:
         } if DOM_FEATURE_NAMES else None,
     }
 
-# ─────────────────────────────────────────────────────────
-# COMBINATION LOGIC
-# ─────────────────────────────────────────────────────────
+
 
 def combine_results(l1: Optional[dict], l2: dict, l1_skip_reason: Optional[str] = None) -> dict:
     l2_score      = l2.get("score")
@@ -432,9 +394,6 @@ def combine_results(l1: Optional[dict], l2: dict, l1_skip_reason: Optional[str] 
         "http_warning": http_warning,
     }
 
-# ─────────────────────────────────────────────────────────
-# CORE PREDICTION LOGIC (shared by single + bulk)
-# ─────────────────────────────────────────────────────────
 
 def predict_single(raw_url: str) -> dict:
     """
@@ -534,9 +493,7 @@ def _error_response(raw_url: str, message: str) -> dict:
         "error": message,
     }
 
-# ─────────────────────────────────────────────────────────
-# ROUTES
-# ─────────────────────────────────────────────────────────
+
 
 @app.get("/")
 def health_check():
@@ -562,17 +519,12 @@ async def predict_csv(file: UploadFile = File(...)):
     import pandas as pd
     import io
 
-    # ─────────────────────────────────────────
-    # READ FILE SAFELY
-    # ─────────────────────────────────────────
+
     content = await file.read()
 
     if not content or len(content) == 0:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
-    # ─────────────────────────────────────────
-    # DECODE (MULTI-ENCODING SUPPORT)
-    # ─────────────────────────────────────────
     try:
         text = content.decode("utf-8-sig")
     except UnicodeDecodeError:
@@ -598,9 +550,7 @@ async def predict_csv(file: UploadFile = File(...)):
             detail=f"CSV parsing failed: {str(e)}"
         )
 
-    # ─────────────────────────────────────────
-    # VALIDATE DATAFRAME
-    # ─────────────────────────────────────────
+
     if df.empty or df.shape[1] == 0:
         raise HTTPException(
             status_code=400,
@@ -609,9 +559,7 @@ async def predict_csv(file: UploadFile = File(...)):
 
     fieldnames = df.columns.tolist()
 
-    # ─────────────────────────────────────────
-    # DETECT URL COLUMN
-    # ─────────────────────────────────────────
+
     url_col = None
     for col in fieldnames:
         if col.strip().lower() in {"url", "urls", "link", "links", "domain", "website"}:
@@ -640,9 +588,7 @@ async def predict_csv(file: UploadFile = File(...)):
     if len(rows) > 500:
         raise HTTPException(status_code=400, detail="Maximum 500 URLs per CSV upload.")
 
-    # ─────────────────────────────────────────
-    # STREAM RESPONSE
-    # ─────────────────────────────────────────
+
     def stream():
         # Send metadata first
         yield json.dumps({"type": "meta", "total": len(rows)}) + "\n"
