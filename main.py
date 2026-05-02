@@ -615,6 +615,51 @@ async def predict_csv(file: UploadFile = File(...)):
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
 
+@app.post("/predict/bulk")
+async def predict_bulk(payload: BulkURLInput):
+    urls = [u.strip() for u in payload.urls if u.strip()]
+
+    if not urls:
+        raise HTTPException(status_code=400, detail="No URLs provided")
+
+    if len(urls) > 500:
+        raise HTTPException(status_code=400, detail="Maximum 500 URLs")
+
+    def stream():
+        # tell frontend total count first
+        yield json.dumps({
+            "type": "meta",
+            "total": len(urls)
+        }) + "\n"
+
+        for idx, raw in enumerate(urls):
+            try:
+                result = predict_single(raw)
+            except Exception as e:
+                result = {
+                    "input_url": raw,
+                    "url": raw,
+                    "verdict": "unknown",
+                    "confidence": "none",
+                    "reason": f"Processing error: {str(e)}",
+                    "error": str(e),
+                }
+
+            result["_index"] = idx
+            result["type"] = "result"
+
+            # push one completed result immediately
+            yield json.dumps(result) + "\n"
+
+        yield json.dumps({
+            "type": "done",
+            "total": len(urls)
+        }) + "\n"
+
+    return StreamingResponse(
+        stream(),
+        media_type="application/x-ndjson"
+    )
 
 # Run with: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 if __name__ == "__main__":

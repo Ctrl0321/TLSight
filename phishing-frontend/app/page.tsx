@@ -37,10 +37,20 @@ type PredictionResponse = {
   type?: string
 }
 
-type BulkMeta = { type: "meta"; total: number }
-type BulkDone = { type: "done"; total: number }
-type StreamLine = PredictionResponse | BulkMeta | BulkDone
+type BulkMeta = {
+  type: "meta"
+  total: number
+}
 
+type BulkDone = {
+  type: "done"
+  total: number
+}
+type BulkResult = PredictionResponse & {
+  type: "result"
+  _index: number
+}
+type StreamLine = BulkMeta | BulkDone | BulkResult
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -446,8 +456,34 @@ function BulkPanel() {
         const d = await res.json().catch(() => ({}))
         throw new Error(d.detail || `HTTP ${res.status}`)
       }
-      const data = await res.json()
-      setResults(data.results)
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+
+      while (true) {
+        const { done: streamDone, value } = await reader.read()
+        if (streamDone) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split("\n")
+        buffer = lines.pop() ?? ""
+
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (!trimmed) continue
+
+          const obj: StreamLine = JSON.parse(trimmed)
+
+          if (obj.type === "meta") {
+            setTotal(obj.total)
+          } else if (obj.type === "done") {
+            setDone(true)
+          } else if (obj.type === "result") {
+            setResults(prev => [...prev, obj as PredictionResponse])
+          }
+        }
+      }
+
       setDone(true)
     } catch (err: any) {
       setError(err.message || "Unexpected error.")
